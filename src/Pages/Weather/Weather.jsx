@@ -1,144 +1,86 @@
-
-import { useState } from 'react';
-import axios from 'axios';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFrown } from '@fortawesome/free-solid-svg-icons';
-import './style.css'
-import Header from '../../Components/Taskboard/Header';
+import { CircularProgress, Slide, TextField } from "@mui/material";
+import { useEffect, useState } from "react";
+import "./style.css";
 
 function Weather() {
-  const [query, setQuery] = useState();
-  const [weather, setWeather] = useState({
-    loading: false,
-    data: {},
-    error: false,
-  });
+  const [cityName, setCityName] = useState("Rome");
+  const [inputText, setInputText] = useState("");
+  const [data, setData] = useState({});
+  const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const toDate = () => {
-    const months = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'Nocvember',
-      'December',
-    ];
-    const days = [
-      'Sunday',
-      'Monday',
-      'Tuesday',
-      'Wednesday',
-      'Thursday',
-      'Friday',
-      'Saturday',
-    ];
-    const currentDate = new Date();
-    const date = `${days[currentDate.getDay()]} ${currentDate.getDate()} ${
-      months[currentDate.getMonth()]
-    }`;
-    return date;
-  };
+  useEffect(() => {
+    fetch(
+      `https://api.openweathermap.org/data/2.5/weather?q=${cityName}&appid=0c9e428c4a05442a8e910d1f99e05829&units=metric`
+    )
+      .then((res) => {
+        if (res.status === 200) {
+          error && setError(false);
+          return res.json();
+        } else {
+          throw new Error("Something went wrong");
+        }
+      })
+      .then((data) => {
+        setData(data);
+      })
+      .catch(() => setError(true))
+      .finally(() => setLoading(false));
+  }, [cityName, error]);
 
-  const search = async (event) => {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      setQuery('');
-      setWeather({ ...weather, loading: true });
-      const url = 'https://api.openweathermap.org/data/2.5/weather';
-      const appid = '7d3ea6f05fcfa5fa00151a438f10d406';
-      
-
-      await axios
-        .get(url, {
-          params: {
-            q: query,
-            units: 'metric',
-            appid: appid,
-          },
-        })
-        .then((res) => {
-          console.log('res', res);
-          setWeather({ data: res.data, loading: false, error: false });
-        })
-        .catch((error) => {
-          setWeather({ ...weather, data: {}, error: true });
-          setQuery('');
-          console.log('error', error);
-        });
+  const handleSearch = (e) => {
+    if (e.key === "Enter") {
+      setCityName(e.target.value);
+      setInputText("");
     }
   };
-  
+
   return (
-    <div>
-      <Header/>
-    <div className='component'>
-      <h1 className="app-name">
-        Weather App<span>🌤</span>
-      </h1>
-      <div className="search-bar">
-        <input
-          type="text"
-          className="city-search"
-          placeholder="Search City.."
-          name="query"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          onKeyDown={search}
-        />
-      </div>
-
-      {weather.loading && (
+    <div className="bg_img">
+      {!loading ? (
         <>
-          <br />
-          <br />
-        </>
-      )}
-      {weather.error && (
-        <>
-          <br />
-          <br />
-          <span className="error-message">
-            <FontAwesomeIcon icon={faFrown} />
-            <span style={{ 'font-size': '20px' }}> Sorry, City not found</span>
-          </span>
-        </>
-      )}
-
-      {weather && weather.data && weather.data.main && (
-        <div>
-          <div className="city-name">
-            <h2>
-              {weather.data.name}, <span>{weather.data.sys.country}</span>
-            </h2>
-          </div>
-          <div className="date">
-            <span>{toDate()}</span>
-          </div>
-          <div className="icon-temp">
+          <TextField
+            variant="filled"
+            label="Search location"
+            className="input"
+            error={error}
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+            onKeyDown={handleSearch}
+          />
+          <h1 className="city">{data.name}</h1>
+          <div className="group">
             <img
-              className=""
-              src={`https://openweathermap.org/img/wn/${weather.data.weather[0].icon}@2x.png`}
-              alt={weather.data.weather[0].description}
+              src={`http://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`}
+              alt=""
             />
-            {Math.round(weather.data.main.temp)}
-            <sup className="deg">&deg;C</sup>
+            <h1>{data.weather[0].main}</h1>
           </div>
-          <h3>{weather.data.weather[0].description.toUpperCase()}</h3>
-          <div className="des-wind">
-            <p>Min {weather.data.main.temp_min}&deg;C</p>
-            <p>Max {weather.data.main.temp_max}&deg;C</p>
-            <p>Wind Speed {weather.data.wind.speed}m/s</p>
-            <p>Humidity {weather.data.main.humidity}%</p>
-          </div>
-        </div>
+
+          <h1 className="temp">{data.main.temp.toFixed()} °C</h1>
+
+          <Slide direction="right" timeout={800} in={!loading}>
+            <div className="box_container">
+              <div className="box">
+                <p>Humidity</p>
+                <h1>{data.main.humidity.toFixed()}%</h1>
+              </div>
+
+              <div className="box">
+                <p>Wind</p>
+                <h1>{data.wind.speed.toFixed()} km/h</h1>
+              </div>
+
+              <div className="box">
+                <p>Feels Like</p>
+                <h1>{data.main.feels_like.toFixed()} °C</h1>
+              </div>
+            </div>
+          </Slide>
+        </>
+      ) : (
+        <CircularProgress />
       )}
-    </div>
     </div>
   );
 }

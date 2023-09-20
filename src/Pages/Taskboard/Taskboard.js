@@ -94,9 +94,7 @@ const App = () => {
                 }
             </div>
         </div>
-        <div>
-            <button className="button_main">+</button>
-        </div>
+        
     </div>
     
   )
